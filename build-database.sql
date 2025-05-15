@@ -12,7 +12,7 @@ CREATE TABLE Station(
 -- Import CSV into Station
 COPY Station FROM 'data/processed/station.csv' (HEADER TRUE, nullstr 'NA');
 
--- Verify
+-- Verify Table
 SELECT * FROM Station;
 
 -- Create Tow Table
@@ -36,7 +36,7 @@ CREATE TABLE Tow(
 -- Import CSV into Tow
 COPY Tow FROM 'data/processed/tow.csv' (HEADER TRUE, nullstr 'NA');
 
--- Verify
+-- Verify Table
 SELECT * FROM Tow;
 
 -- Create Fish Table
@@ -48,7 +48,7 @@ CREATE TABLE Fish(
 -- Import CSV into Fish
 COPY Fish FROM 'data/processed/fish.csv' (HEADER TRUE, nullstr 'NA');
 
--- Verify
+-- Verify Table
 SELECT * FROM Fish;
 
 -- Create Length Table
@@ -67,7 +67,7 @@ CREATE TABLE Length(
 -- Import CSV into Length
 COPY Length FROM 'data/processed/length.csv' (HEADER TRUE, nullstr 'NA');
 
--- Verify
+-- Verify Table
 SELECT * FROM Length;
 
 -- Create Water Table
@@ -104,5 +104,5 @@ CREATE TABLE Water(
 -- Import CSV into Water
 COPY Water FROM 'data/processed/water.csv' (HEADER TRUE, nullstr 'NA');
 
--- Verify
+-- Verify Table
 SELECT * FROM Water;
