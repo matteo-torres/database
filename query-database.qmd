@@ -4,19 +4,108 @@ author: "Matteo Torres"
 format: html
 editor_options: 
   chunk_output_type: console
+toc: true
 ---
 
 ## Load Packages
-```{r}
+```{r, message = FALSE}
 #| code-fold: true
 
+library(sf)
 library(DBI)
+library(tmap)
 library(duckdb)
+library(tigris)
+library(tidyverse)
+```
+
+## Read Data
+```{r, output = FALSE}
+# california shapefile
+california <- states(cb = TRUE) %>% 
+  filter(NAME == "California") %>%
+  st_transform(crs = 4326)
 ```
 
 ## Connect to Database
 ```{r}
-database <- dbConnect(duckdb(), dbir = "database.db")
+database <- dbConnect(duckdb(), dbdir = "database.db")
 ```
 
 ## Query Database
+
+#### Which 5 fish taxa collected at the Napa River station have the highest average length across all sampling dates?
+```{r}
+# first query
+query_1 <- "SELECT Fish.taxa, AVG(Length.length) AS avg_length
+FROM Length
+JOIN Fish ON Length.fish_code = Fish.fish_code
+JOIN Tow ON Length.date = Tow.date AND Length.station = Tow.station
+JOIN Station ON Tow.station = Station.station
+WHERE Station.location = 'Napa River'
+GROUP BY Fish.taxa
+ORDER BY avg_length DESC
+LIMIT 5;"
+
+# create df
+query_1_df <- dbGetQuery(database, query_1)
+```
+
+```{r}
+#| code-fold: true
+
+# bar plot of top 5 fish taxa lengths
+ggplot(query_1_df, aes(x = fct_reorder(taxa, avg_length), y = avg_length)) +
+  geom_col(fill = "#046490") +
+  geom_text(aes(label = signif(avg_length, digits = 3)), nudge_y = 5)+
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
+  labs(y = "Average Length (mm)",
+       title = "Top 5 Fish Taxa by Average Fork Length in the Napa River") +
+  coord_flip() +
+  theme_bw() +
+  theme(axis.text = element_text(size = 10, color = "black"),
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(size = 12),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.margin = margin(t = 10, r = 25, b = 10, l = 10))
+```
+
+#### Where are the fish surveyed?
+```{r}
+# second query
+query_2 <- "SELECT station, lat, long
+FROM Station;"
+
+# create df
+query_2_df <- dbGetQuery(database, query_2) %>%
+  mutate(long = -abs(long)) %>%
+  st_as_sf(coords = c("long", "lat"), 
+           crs = 4326,
+           remove = FALSE)
+```
+
+```{r}
+#| code-fold: true
+
+# create bounding box
+sf_bay_bbox <- st_bbox(c(xmin = -124.0, 
+                         ymin = 37.0, 
+                         xmax = -121.0, 
+                         ymax = 39), 
+                       crs = st_crs(4326))
+
+# map survey station sites
+tm_shape(california, bbox = sf_bay_bbox) +
+  tm_polygons(col = "#49a842", alpha = 0.5, border.col = "black") +
+tm_shape(query_2_df) +
+  tm_dots(size = 0.05,
+          col = "#06063d") +
+tm_compass(position = c("RIGHT", "TOP")) +
+tm_scale_bar(position = "LEFT") +
+tm_layout(title = "Survey Station Sites",
+          title.fontface = "bold",
+          title.position = c("center", "top"),
+          bg.color = "#ccf0f7")
+```
+
