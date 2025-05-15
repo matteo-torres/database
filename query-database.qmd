@@ -1,0 +1,22 @@
+---
+title: "Query Database"
+author: "Matteo Torres"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+## Load Packages
+```{r}
+#| code-fold: true
+
+library(DBI)
+library(duckdb)
+```
+
+## Connect to Database
+```{r}
+database <- dbConnect(duckdb(), dbir = "database.db")
+```
+
+## Query Database
