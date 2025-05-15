@@ -1,0 +1,131 @@
+---
+title: "Data Cleaning"
+author: "Matteo Torres"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+## Load Packages
+```{r, message = FALSE}
+#| code-fold: true
+
+library(here)
+library(janitor)
+library(tidyverse)
+library(measurements)
+```
+
+## Read Data
+```{r, message = FALSE}
+tow <- read_csv(here("data", "raw", "TowInfo.csv"))
+fish <- read_csv(here("data", "raw", "FishCodes.csv"))
+length <- read_csv(here("data", "raw", "Lengths.csv"))
+water <- read_csv(here("data", "raw", "WaterInfo.csv"))
+station <- read_csv(here("data", "raw", "Station_Lookup.csv"))
+```
+
+## Clean Data
+```{r}
+#| code-fold: true
+
+# clean tow data
+tow_clean <- tow %>%
+  clean_names() %>% # convert column names to lower snake case
+  select(!comments) # remove "comments" column
+
+# verify
+head(tow_clean)
+```
+
+```{r}
+#| code-fold: true
+
+# clean fish data
+fish_clean <- fish %>%
+  clean_names() %>% # convert column names to lower snake case
+  arrange(fish_code) # arrange fish codes in ascending order
+
+# verify
+head(fish_clean)
+```
+
+```{r}
+#| code-fold: true
+
+# clean length data
+length_clean <- length %>%
+  clean_names() # convert column names to lower snake case
+
+# verify
+head(length_clean)
+```
+
+```{r}
+#| code-fold: true
+
+# clean water data
+water_clean <- water %>%
+  clean_names() %>% # convert column names to lower snake case
+  select(!comments) %>% # remove "comments" column
+  mutate(start_lat = str_replace_all(string = start_lat, pattern = "-", replacement = " "), # remove unnecessary dashes
+         start_lat_min = as.numeric(start_lat_min), # convert to numeric
+         start_lat_sec = as.numeric(start_lat_sec), # convert to numeric
+         start_long = str_replace_all(string = start_long, pattern = "-", replacement = " "), # remove unnecessary dashes
+         start_long_min = as.numeric(start_long_min), # convert to numeric
+         start_long_sec = as.numeric(start_long_sec), # convert to numeric
+         end_lat = str_replace_all(string = end_lat, pattern = "-", replacement = " "), # remove unnecessary dashes
+         end_lat_min = as.numeric(end_lat_min), # convert to numeric
+         end_lat_sec = as.numeric(end_lat_sec), # convert to numeric
+         end_long = str_replace_all(string = end_long, pattern = "-", replacement = " "), # remove unnecessary dashes
+         end_long_min = as.numeric(end_long_min), # convert to numeric
+         end_long_sec = as.numeric(end_long_sec)) # convert to numeric
+
+# verify
+head(water_clean)
+```
+
+```{r}
+#| code-fold: true
+
+# clean station data
+station_clean <- station %>%
+  clean_names() %>%
+  mutate(
+    lat = as.numeric(conv_unit(lat, from = "deg_min_sec", to = "dec_deg")), # convert to decimal degrees
+    long = as.numeric(conv_unit(long, from = "deg_min_sec", to = "dec_deg")), # convert to decimal degrees
+    location = case_when(
+      str_detect(description, "^Napa River") ~ "Napa River",
+      str_detect(description, "^Carquinez Strait") ~ "Carquinez Strait",
+      str_detect(description, "^Suisun Bay") ~ "Suisun Bay",
+      str_detect(description, "^Sacramento River") ~ "Sacramento River",
+      str_detect(description, "Honker Bay") ~ "Honker Bay",
+      str_detect(description, "^New York") ~ "New York",
+      str_detect(description, "^Montezuma") ~ "Montezuma",
+      str_detect(description, "^Sherman Lake") ~ "Sherman Lake",
+      str_detect(description, "^Horse Shoe Bend") ~ "Horse Shoe Bend",
+      str_detect(description, "^Cache") ~ "Cache",
+      str_detect(description, "^Deepwater Channel") ~ "Deepwater Channel",
+      str_detect(description, "Broad") ~ "Broad",
+      str_detect(description, "^San Joaquin River") ~ "San Joaquin River",
+      str_detect(description, "False River") ~ "False River",
+      str_detect(description, "^Middle River & Empire Cut") ~ "Middle River & Empire Cut",
+      str_detect(description, "^Old River") ~ "Old River",
+      str_detect(description, "^Little Potato") ~ "Little Potato",
+      str_detect(description, "^San Pablo Bay") ~ "San Pablo Bay")) %>% # extract location names
+  select(id, station, location, lat, long) # select columns
+
+# verify
+head(station_clean)
+```
+
+## Save Clean Data
+```{r}
+# save CSVs to the "processed" data folder
+write_csv(tow_clean, "data/processed/tow.csv")
+write_csv(fish_clean, "data/processed/fish.csv")
+write_csv(water_clean, "data/processed/water.csv")
+write_csv(length_clean, "data/processed/length.csv")
+write_csv(station_clean, "data/processed/station.csv")
+```
+
