@@ -32,7 +32,8 @@ station <- read_csv(here("data", "raw", "Station_Lookup.csv"))
 # clean tow data
 tow_clean <- tow %>%
   clean_names() %>% # convert column names to lower snake case
-  select(!comments) # remove "comments" column
+  select(!comments) %>% # remove "comments" column
+  mutate(time = format(time, "%Y-%m-%d %H:%M:%S")) # convert to character in standard format
 
 # verify
 head(tow_clean)
